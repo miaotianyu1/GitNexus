@@ -116,6 +116,26 @@ describe('Tree-sitter multi-language parsing', () => {
     });
   });
 
+  describe('Objective-C', () => {
+    it('parses interfaces, implementations, and methods', async () => {
+      await loadLanguage(SupportedLanguages.ObjectiveC);
+      const content = readFixture('simple.m');
+      const provider = getProvider(SupportedLanguages.ObjectiveC);
+      const { matches } = parseAndQuery(parser, content, provider.treeSitterQueries);
+      const defs = extractDefinitions(matches);
+
+      expect(defs.length).toBeGreaterThan(0);
+      const defTypes = defs.map((d) => d.type);
+      expect(defTypes).toContain('definition.class');
+      expect(defTypes).toContain('definition.method');
+
+      const names = defs.map((d) => d.name);
+      expect(names).toContain('MyClass');
+      expect(names).toContain('doThing');
+      expect(names).toContain('helper');
+    });
+  });
+
   describe('Go', () => {
     it('parses function and type declarations', async () => {
       await loadLanguage(SupportedLanguages.Go);

@@ -401,6 +401,36 @@ export const C_QUERIES = `
 (call_expression function: (field_expression field: (field_identifier) @call.name)) @call
 `;
 
+// Objective-C queries - works with tree-sitter-objc (extends the C grammar)
+export const OBJC_QUERIES = `
+${C_QUERIES}
+
+; ── Imports ────────────────────────────────────────────────────────────────
+; Module imports: @import Foundation;
+(module_import path: (identifier) @import.source) @import
+
+; ── Types ──────────────────────────────────────────────────────────────────
+; Interfaces and implementations
+(class_interface (identifier) @name) @definition.class
+(class_implementation (identifier) @name) @definition.class
+(protocol_declaration (identifier) @name) @definition.interface
+
+; ── Methods & Properties ───────────────────────────────────────────────────
+; Method name is the first identifier after method_type.
+(method_definition (method_type) (identifier) @name) @definition.method
+(method_declaration (method_type) (identifier) @name) @definition.method
+
+; ── Calls ──────────────────────────────────────────────────────────────────
+; Objective-C message send: [receiver selector:arg]
+(message_expression method: (identifier) @call.name) @call
+
+; ── Heritage ───────────────────────────────────────────────────────────────
+; @interface Child : Parent
+(class_interface
+  (identifier) @heritage.class
+  superclass: (identifier) @heritage.extends) @heritage
+`;
+
 // Go queries - works with tree-sitter-go
 export const GO_QUERIES = `
 ; Functions & Methods
@@ -1181,6 +1211,7 @@ export const LANGUAGE_QUERIES: Record<SupportedLanguages, string> = {
   [SupportedLanguages.JavaScript]: JAVASCRIPT_QUERIES,
   [SupportedLanguages.Python]: PYTHON_QUERIES,
   [SupportedLanguages.Java]: JAVA_QUERIES,
+  [SupportedLanguages.ObjectiveC]: OBJC_QUERIES,
   [SupportedLanguages.C]: C_QUERIES,
   [SupportedLanguages.Go]: GO_QUERIES,
   [SupportedLanguages.CPlusPlus]: CPP_QUERIES,

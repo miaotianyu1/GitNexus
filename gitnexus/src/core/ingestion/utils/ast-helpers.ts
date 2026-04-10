@@ -88,6 +88,8 @@ export const FUNCTION_NODE_TYPES = new Set([
   // Swift
   'init_declaration',
   'deinit_declaration',
+  // Objective-C
+  'method_definition',
   // Ruby
   'method', // def foo
   'singleton_method', // def self.foo
@@ -121,6 +123,11 @@ export const CLASS_CONTAINER_TYPES = new Set([
   // PHP
   'enum_declaration',
   'protocol_declaration',
+  // Objective-C
+  'class_interface',
+  'class_implementation',
+  'category_interface',
+  'category_implementation',
   // Dart
   'mixin_declaration',
   'extension_declaration',
@@ -149,6 +156,10 @@ export const CONTAINER_TYPE_TO_LABEL: Record<string, string> = {
   enum_declaration: 'Enum',
   record_declaration: 'Record',
   protocol_declaration: 'Interface',
+  class_interface: 'Class',
+  class_implementation: 'Class',
+  category_interface: 'Class',
+  category_implementation: 'Class',
   mixin_declaration: 'Mixin',
   extension_declaration: 'Extension',
   class: 'Class',

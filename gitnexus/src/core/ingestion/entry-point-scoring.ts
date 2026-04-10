@@ -226,6 +226,31 @@ export const ENTRY_POINT_PATTERNS = {
     /^onEvent$/, // BLoC event handler
     /^mapEventToState$/, // Legacy BLoC pattern
   ],
+  // Objective-C (UIKit / App lifecycle)
+  [SupportedLanguages.ObjectiveC]: [
+    /^viewDidLoad$/,
+    /^viewWillAppear:$/,
+    /^viewDidAppear:$/,
+    /^viewWillDisappear:$/,
+    /^viewDidDisappear:$/,
+    /^viewDidLayoutSubviews$/,
+    /^viewSafeAreaInsetsDidChange$/,
+    /^didReceiveMemoryWarning$/,
+    /^awakeFromNib$/,
+    /^prepareForSegue:sender:$/,
+    /^application:didFinishLaunchingWithOptions:$/,
+    /^applicationDidBecomeActive:$/,
+    /^applicationWillResignActive:$/,
+    /^applicationDidEnterBackground:$/,
+    /^applicationWillEnterForeground:$/,
+    /^scene:willConnectToSession:options:$/,
+    /^sceneDidBecomeActive:$/,
+    /^sceneWillResignActive:$/,
+    /^sceneWillEnterForeground:$/,
+    /^sceneDidEnterBackground:$/,
+    /^tableView:didSelectRowAtIndexPath:$/,
+    /^collectionView:didSelectItemAtIndexPath:$/,
+  ],
   [SupportedLanguages.Vue]: [], // Vue uses TypeScript queries — entry points handled via TS patterns
   [SupportedLanguages.Cobol]: [], // Standalone regex processor — no tree-sitter entry points
 } satisfies Record<SupportedLanguages, RegExp[]>;

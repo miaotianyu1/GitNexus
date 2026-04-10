@@ -891,6 +891,14 @@ export const AST_FRAMEWORK_PATTERNS_BY_LANGUAGE = {
       patterns: FRAMEWORK_AST_PATTERNS.riverpod,
     },
   ],
+  [SupportedLanguages.ObjectiveC]: [
+    {
+      framework: 'uikit',
+      entryPointMultiplier: 2.5,
+      reason: 'uikit-lifecycle',
+      patterns: FRAMEWORK_AST_PATTERNS.uikit,
+    },
+  ],
   [SupportedLanguages.Vue]: [], // Vue uses TypeScript AST framework detection
   [SupportedLanguages.Cobol]: [], // Standalone regex processor — no AST framework patterns
 } satisfies Record<SupportedLanguages, AstFrameworkPatternConfig[]>;

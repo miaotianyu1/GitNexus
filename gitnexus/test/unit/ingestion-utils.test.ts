@@ -52,6 +52,12 @@ describe('getLanguageFromFilename', () => {
     });
   });
 
+  describe('Objective-C', () => {
+    it.each(['.m', '.mm', '.h'])('detects %s files', (ext) => {
+      expect(getLanguageFromFilename(`MyClass${ext}`)).toBe(SupportedLanguages.ObjectiveC);
+    });
+  });
+
   describe('C', () => {
     it('detects .c files', () => {
       expect(getLanguageFromFilename('main.c')).toBe(SupportedLanguages.C);

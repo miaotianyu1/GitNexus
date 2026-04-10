@@ -2038,17 +2038,26 @@ export class LocalBackend {
     let frontier = [symId];
     let traversalComplete = true;
 
-    // Fix #480: For Java (and other JVM) Class/Interface nodes, CALLS edges
-    // point to Constructor nodes and IMPORTS edges point to File nodes — not
-    // the Class/Interface itself. Seed the frontier with the Constructor(s)
-    // and owning File so the BFS traversal finds those edges naturally.
+    // Fix #480: For Class/Interface nodes, CALLS edges typically point to
+    // Method/Constructor nodes and IMPORTS edges point to File nodes — not
+    // the Class/Interface itself. Seed the frontier with Method/Constructor
+    // nodes plus the owning File so the BFS traversal finds those edges naturally.
     // The owning File is kept only as an internal seed (frontier/visited) and
     // is NOT added to impacted — it is the definition container, not an
     // upstream dependent. The BFS will discover IMPORTS edges on it naturally.
     if (symType === 'Class' || symType === 'Interface') {
       try {
         // Run both seed queries in parallel — they are independent.
-        const [ctorRows, fileRows] = await Promise.all([
+        const [methodRows, ctorRows, fileRows] = await Promise.all([
+          executeParameterized(
+            repo.id,
+            `
+            MATCH (n)-[hm:CodeRelation]->(m:Method)
+            WHERE n.id = $symId AND hm.type = 'HAS_METHOD'
+            RETURN m.id AS id, m.name AS name, labels(m)[0] AS type, m.filePath AS filePath
+          `,
+            { symId },
+          ),
           executeParameterized(
             repo.id,
             `
@@ -2071,6 +2080,13 @@ export class LocalBackend {
           ),
         ]);
 
+        for (const r of methodRows) {
+          const rid = r.id || r[0];
+          if (rid && !visited.has(rid)) {
+            visited.add(rid);
+            frontier.push(rid);
+          }
+        }
         for (const r of ctorRows) {
           const rid = r.id || r[0];
           if (rid && !visited.has(rid)) {

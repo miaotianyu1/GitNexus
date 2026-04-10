@@ -1,0 +1,29 @@
+{
+  "name": "tree-sitter-objc",
+  "version": "0.0.0-gitnexus",
+  "description": "Objective-C grammar for tree-sitter (GitNexus vendored build for tree-sitter@0.21.x compatibility)",
+  "license": "MIT",
+  "main": "bindings/node",
+  "types": "bindings/node",
+  "files": [
+    "binding.gyp",
+    "bindings/node/*",
+    "src/**"
+  ],
+  "dependencies": {
+    "node-addon-api": "^8.2.2",
+    "node-gyp-build": "^4.8.2"
+  },
+  "peerDependencies": {
+    "tree-sitter": "^0.21.1"
+  },
+  "peerDependenciesMeta": {
+    "tree-sitter": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "install": "node-gyp-build"
+  }
+}
+

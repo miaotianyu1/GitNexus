@@ -144,6 +144,16 @@ interface LanguageProviderConfig {
     nodeName: string,
     captureMap: CaptureMap,
   ) => string | undefined;
+  /** Override the displayed symbol name for a definition node.
+   *  Useful when the "name" is synthesized from multiple AST nodes
+   *  (e.g., Objective-C selectors that require colons).
+   *  Return null/undefined to fall back to the default extracted name. */
+  readonly definitionNameResolver?: (
+    nodeLabel: NodeLabel,
+    defaultName: string,
+    definitionNode: SyntaxNode,
+    captureMap: CaptureMap,
+  ) => string | null | undefined;
   /** Detect if a file contains framework route definitions (e.g., Laravel routes.php).
    *  When true, the worker extracts routes via the language's route extraction logic.
    *  Default: undefined (no route files). */

@@ -11,6 +11,7 @@ import Go from 'tree-sitter-go';
 import Rust from 'tree-sitter-rust';
 import PHP from 'tree-sitter-php';
 import Ruby from 'tree-sitter-ruby';
+import ObjectiveC from 'tree-sitter-objc';
 import { createRequire } from 'node:module';
 import { SupportedLanguages } from 'gitnexus-shared';
 import { getProvider } from '../languages/index.js';
@@ -307,6 +308,7 @@ const languageMap: Record<string, TreeSitterLanguage> = {
   [`${SupportedLanguages.TypeScript}:tsx`]: TypeScript.tsx,
   [SupportedLanguages.Python]: Python,
   [SupportedLanguages.Java]: Java,
+  [SupportedLanguages.ObjectiveC]: ObjectiveC,
   [SupportedLanguages.C]: C,
   [SupportedLanguages.CPlusPlus]: CPP,
   [SupportedLanguages.CSharp]: CSharp,
@@ -1895,7 +1897,16 @@ const processFileGroup = (
       const nodeLabel = extractedClassSymbol?.type ?? defaultNodeLabel;
       // Synthesize name for constructors without explicit @name capture (e.g. Swift init)
       if (!nameNode && nodeLabel !== 'Constructor' && !extractedClassSymbol) continue;
-      const nodeName = extractedClassSymbol?.name ?? (nameNode ? nameNode.text : 'init');
+      let nodeName = extractedClassSymbol?.name ?? (nameNode ? nameNode.text : 'init');
+      if (definitionNode && provider.definitionNameResolver) {
+        const resolved = provider.definitionNameResolver(
+          nodeLabel,
+          nodeName,
+          definitionNode,
+          captureMap,
+        );
+        if (resolved) nodeName = resolved;
+      }
       const startLine = definitionNode
         ? definitionNode.startPosition.row + lineOffset
         : nameNode

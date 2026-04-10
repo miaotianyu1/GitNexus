@@ -4,6 +4,7 @@ import {
   JAVASCRIPT_QUERIES,
   PYTHON_QUERIES,
   JAVA_QUERIES,
+  OBJC_QUERIES,
   C_QUERIES,
   GO_QUERIES,
   CPP_QUERIES,
@@ -104,6 +105,19 @@ describe('tree-sitter queries', () => {
 
     it('captures method references as calls', () => {
       expect(JAVA_QUERIES).toContain('(method_reference) @call');
+    });
+  });
+
+  describe('Objective-C queries', () => {
+    it('captures interfaces, implementations, and methods', () => {
+      expect(OBJC_QUERIES).toContain('class_interface');
+      expect(OBJC_QUERIES).toContain('class_implementation');
+      expect(OBJC_QUERIES).toContain('@definition.method');
+    });
+
+    it('captures message sends as calls', () => {
+      expect(OBJC_QUERIES).toContain('message_expression');
+      expect(OBJC_QUERIES).toContain('@call');
     });
   });
 

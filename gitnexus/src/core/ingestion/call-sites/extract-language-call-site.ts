@@ -27,6 +27,33 @@ export function extractParsedCallSite(
         };
       }
       return null;
+    case SupportedLanguages.ObjectiveC: {
+      // Objective-C message send: [receiver selector:arg]
+      if (callNode.type !== 'message_expression') return null;
+      const receiver = callNode.childForFieldName?.('receiver');
+      const receiverName = receiver?.type === 'identifier' ? receiver.text : undefined;
+
+      const methodNodes = callNode.childrenForFieldName?.('method') ?? [];
+      if (methodNodes.length === 0) return null;
+
+      // Multi-keyword selector: method nodes appear as keywords without colons,
+      // so we reinsert ':' between them (and at the end).
+      if (methodNodes.length > 1) {
+        return {
+          calledName: `${methodNodes.map((n) => n.text).join(':')}:`,
+          callForm: 'member',
+          ...(receiverName !== undefined ? { receiverName } : {}),
+        };
+      }
+
+      const only = methodNodes[0].text;
+      const isKeyword = callNode.text.includes(`${only}:`);
+      return {
+        calledName: isKeyword ? `${only}:` : only,
+        callForm: 'member',
+        ...(receiverName !== undefined ? { receiverName } : {}),
+      };
+    }
     default:
       return null;
   }

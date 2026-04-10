@@ -25,12 +25,14 @@ import { swiftProvider } from './swift.js';
 import { dartProvider } from './dart.js';
 import { vueProvider } from './vue.js';
 import { cobolProvider } from './cobol.js';
+import { objectiveCProvider } from './objective-c.js';
 
 export const providers = {
   [SupportedLanguages.JavaScript]: javascriptProvider,
   [SupportedLanguages.TypeScript]: typescriptProvider,
   [SupportedLanguages.Python]: pythonProvider,
   [SupportedLanguages.Java]: javaProvider,
+  [SupportedLanguages.ObjectiveC]: objectiveCProvider,
   [SupportedLanguages.Kotlin]: kotlinProvider,
   [SupportedLanguages.Go]: goProvider,
   [SupportedLanguages.Rust]: rustProvider,

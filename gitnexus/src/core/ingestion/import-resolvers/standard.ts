@@ -138,7 +138,11 @@ export const resolveImportPath = (
   }
 
   // C/C++ includes use actual file paths (e.g. "animal.h") — don't convert dots to slashes
-  const isCpp = language === SupportedLanguages.C || language === SupportedLanguages.CPlusPlus;
+  // C/C++/ObjC includes are path-like already (e.g. "Foo.h"), so keep dots intact.
+  const isCpp =
+    language === SupportedLanguages.C ||
+    language === SupportedLanguages.CPlusPlus ||
+    language === SupportedLanguages.ObjectiveC;
   const pathLike = importPath.includes('/') || isCpp ? importPath : importPath.replace(/\./g, '/');
   const pathParts = pathLike.split('/').filter(Boolean);
 
@@ -185,6 +189,20 @@ export const resolveTypescriptImport: ImportResolverFn = (raw, fp, ctx) =>
 /** C: standard single-file resolution for #include directives. */
 export const resolveCImport: ImportResolverFn = (raw, fp, ctx) =>
   resolveStandard(raw, fp, ctx, SupportedLanguages.C);
+
+/** Objective-C: standard single-file resolution for #import directives (C-like include semantics). */
+export const resolveObjectiveCImport: ImportResolverFn = (raw, fp, ctx) =>
+  // Special-case: Xcode generates "<ProductModuleName>-Swift.h" at build time.
+  // It is not present in the repo, but represents a bridge to Swift symbols.
+  // Heuristic: if Swift exists in the repo, wire this import to all Swift files.
+  raw.endsWith('-Swift.h')
+    ? (() => {
+        const swiftFiles = ctx.allFileList.filter((p) => p.endsWith('.swift'));
+        // Hard cap to avoid pathological fan-out on huge mono-repos.
+        if (swiftFiles.length === 0 || swiftFiles.length > 2000) return null;
+        return { kind: 'files', files: swiftFiles } as const;
+      })()
+    : resolveStandard(raw, fp, ctx, SupportedLanguages.ObjectiveC);
 
 /** C++: standard single-file resolution for #include directives. */
 export const resolveCppImport: ImportResolverFn = (raw, fp, ctx) =>

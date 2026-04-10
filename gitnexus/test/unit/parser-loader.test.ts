@@ -34,6 +34,10 @@ describe('parser-loader', () => {
       await expect(loadLanguage(SupportedLanguages.Java)).resolves.not.toThrow();
     });
 
+    it('loads Objective-C language', async () => {
+      await expect(loadLanguage(SupportedLanguages.ObjectiveC)).resolves.not.toThrow();
+    });
+
     it('loads C language', async () => {
       await expect(loadLanguage(SupportedLanguages.C)).resolves.not.toThrow();
     });

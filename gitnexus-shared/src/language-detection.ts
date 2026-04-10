@@ -31,6 +31,11 @@ const EXTENSION_MAP: Record<SupportedLanguages, readonly string[]> = {
   [SupportedLanguages.TypeScript]: ['.ts', '.tsx', '.mts', '.cts'],
   [SupportedLanguages.Python]: ['.py'],
   [SupportedLanguages.Java]: ['.java'],
+  // Objective-C: headers + implementation units.
+  // Note: `.h` is ambiguous with C/C++; we bias to ObjC to preserve selector-based
+  // symbol naming and call graph fidelity. Projects dominated by C/C++ should
+  // override via file filters or repo-specific language hints.
+  [SupportedLanguages.ObjectiveC]: ['.h', '.m', '.mm'],
   [SupportedLanguages.C]: ['.c'],
   [SupportedLanguages.CPlusPlus]: ['.cpp', '.cc', '.cxx', '.h', '.hpp', '.hxx', '.hh'],
   [SupportedLanguages.CSharp]: ['.cs'],
@@ -89,6 +94,7 @@ const SYNTAX_MAP: Record<SupportedLanguages, string> = {
   [SupportedLanguages.TypeScript]: 'typescript',
   [SupportedLanguages.Python]: 'python',
   [SupportedLanguages.Java]: 'java',
+  [SupportedLanguages.ObjectiveC]: 'objectivec',
   [SupportedLanguages.C]: 'c',
   [SupportedLanguages.CPlusPlus]: 'cpp',
   [SupportedLanguages.CSharp]: 'csharp',

@@ -52,7 +52,7 @@ If always-on instructions grow, load deep conventions via conditional reads (e.g
 GitNexus MCP rules are in the `<!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **GitNexus** (3883 symbols, 9861 relationships, 225 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **GitNexus-objc** (4027 symbols, 9332 relationships, 300 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -68,7 +68,7 @@ This project is indexed by GitNexus as **GitNexus** (3883 symbols, 9861 relation
 
 1. `gitnexus_query({query: "<error or symptom>"})` — find execution flows related to the issue
 2. `gitnexus_context({name: "<suspect function>"})` — see all callers, callees, and process participation
-3. `READ gitnexus://repo/GitNexus/process/{processName}` — trace the full execution flow step by step
+3. `READ gitnexus://repo/GitNexus-objc/process/{processName}` — trace the full execution flow step by step
 4. For regressions: `gitnexus_detect_changes({scope: "compare", base_ref: "main"})` — see what your branch changed
 
 ## When Refactoring
@@ -107,10 +107,10 @@ This project is indexed by GitNexus as **GitNexus** (3883 symbols, 9861 relation
 
 | Resource | Use for |
 |----------|---------|
-| `gitnexus://repo/GitNexus/context` | Codebase overview, check index freshness |
-| `gitnexus://repo/GitNexus/clusters` | All functional areas |
-| `gitnexus://repo/GitNexus/processes` | All execution flows |
-| `gitnexus://repo/GitNexus/process/{name}` | Step-by-step execution trace |
+| `gitnexus://repo/GitNexus-objc/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/GitNexus-objc/clusters` | All functional areas |
+| `gitnexus://repo/GitNexus-objc/processes` | All execution flows |
+| `gitnexus://repo/GitNexus-objc/process/{name}` | Step-by-step execution trace |
 
 ## Self-Check Before Finishing
 

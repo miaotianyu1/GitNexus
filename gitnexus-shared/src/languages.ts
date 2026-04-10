@@ -9,6 +9,8 @@ export enum SupportedLanguages {
   TypeScript = 'typescript',
   Python = 'python',
   Java = 'java',
+  /** Objective-C source (tree-sitter-objc, .m/.mm/.h). */
+  ObjectiveC = 'objectivec',
   C = 'c',
   CPlusPlus = 'cpp',
   CSharp = 'csharp',
