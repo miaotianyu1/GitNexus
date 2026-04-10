@@ -10,6 +10,27 @@ export type ParsedCallSite = {
   receiverName?: string;
 };
 
+function resolveObjectiveCReceiverName(
+  receiver: SyntaxNode | null | undefined,
+): string | undefined {
+  if (!receiver) return undefined;
+  if (receiver.type === 'identifier') return receiver.text;
+  if (receiver.type !== 'message_expression') return undefined;
+
+  const nestedReceiver = receiver.childForFieldName?.('receiver');
+  const nestedReceiverName =
+    nestedReceiver?.type === 'identifier' ? nestedReceiver.text : undefined;
+  if (!nestedReceiverName) return undefined;
+
+  const nestedMethodNodes = receiver.childrenForFieldName?.('method') ?? [];
+  if (nestedMethodNodes.length !== 1) return undefined;
+
+  const nestedSelector = nestedMethodNodes[0].text;
+  if (nestedSelector !== 'alloc' && nestedSelector !== 'new') return undefined;
+
+  return nestedReceiverName;
+}
+
 /** Non-null → seed replaces @call.name; null → use @call.name + inferCallForm / extractReceiverName. */
 export function extractParsedCallSite(
   language: SupportedLanguages,
@@ -31,7 +52,7 @@ export function extractParsedCallSite(
       // Objective-C message send: [receiver selector:arg]
       if (callNode.type !== 'message_expression') return null;
       const receiver = callNode.childForFieldName?.('receiver');
-      const receiverName = receiver?.type === 'identifier' ? receiver.text : undefined;
+      const receiverName = resolveObjectiveCReceiverName(receiver);
 
       const methodNodes = callNode.childrenForFieldName?.('method') ?? [];
       if (methodNodes.length === 0) return null;
