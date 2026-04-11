@@ -417,9 +417,12 @@ const processParsingSequential = async (
         nodeLabel === 'Constructor' ||
         nodeLabel === 'Property' ||
         nodeLabel === 'Function';
-      const enclosingClassInfo = needsOwner
-        ? cachedFindEnclosingClassInfo(nameNode || definitionNodeForRange, file.path)
-        : null;
+      const ownerNode =
+        nodeLabel === 'Property'
+          ? (definitionNodeForRange ?? nameNode)
+          : nameNode || definitionNodeForRange;
+      const enclosingClassInfo =
+        needsOwner && ownerNode ? cachedFindEnclosingClassInfo(ownerNode, file.path) : null;
       const enclosingClassId = enclosingClassInfo?.classId ?? null;
 
       // Qualify method/property IDs with enclosing class name to avoid collisions

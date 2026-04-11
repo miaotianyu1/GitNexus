@@ -203,4 +203,35 @@ describe('Objective-C parsing', () => {
     const method = extracted?.methods.find((m) => m.name === 'doThing:bar:');
     expect(method?.parameters.length).toBe(2);
   });
+
+  it('extracts Objective-C property field metadata', () => {
+    const code = `
+      @interface Widget : NSObject
+      @property (nonatomic, readonly) NSString *title;
+      @property (class, nonatomic) NSInteger count;
+      @end
+    `;
+    const parser = new Parser();
+    parser.setLanguage(ObjectiveC);
+    const tree = parser.parse(code);
+    const provider = getProvider(SupportedLanguages.ObjectiveC);
+    const classInterface = tree.rootNode.namedChildren.find((n) => n.type === 'class_interface');
+    expect(classInterface).toBeDefined();
+    const extracted = provider.fieldExtractor?.extract(classInterface!, {
+      filePath: 'widget.h',
+      language: SupportedLanguages.ObjectiveC,
+      typeEnv: {
+        fileScope: () => new Map(),
+        get: () => undefined,
+      } as any,
+      symbolTable: {
+        lookupExactAll: () => [],
+      } as any,
+    });
+    const title = extracted?.fields.find((f) => f.name === 'title');
+    const count = extracted?.fields.find((f) => f.name === 'count');
+    expect(title?.type).toBe('NSString');
+    expect(title?.isReadonly).toBe(true);
+    expect(count?.isStatic).toBe(true);
+  });
 });

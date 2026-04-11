@@ -1924,9 +1924,10 @@ const processFileGroup = (
         nodeLabel === 'Constructor' ||
         nodeLabel === 'Property' ||
         nodeLabel === 'Function';
-      const enclosingClassInfo = needsOwner
-        ? cachedFindEnclosingClassInfo(nameNode || definitionNode, file.path)
-        : null;
+      const ownerNode =
+        nodeLabel === 'Property' ? (definitionNode ?? nameNode) : nameNode || definitionNode;
+      const enclosingClassInfo =
+        needsOwner && ownerNode ? cachedFindEnclosingClassInfo(ownerNode, file.path) : null;
       const enclosingClassId = enclosingClassInfo?.classId ?? null;
 
       // Qualify method/property IDs with enclosing class name to avoid collisions

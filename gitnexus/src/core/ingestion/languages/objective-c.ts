@@ -25,6 +25,7 @@ import { resolveObjectiveCImport } from '../import-resolvers/standard.js';
 import { OBJC_QUERIES } from '../tree-sitter-queries.js';
 import type { NodeLabel } from 'gitnexus-shared';
 import { createObjectiveCMethodExtractor } from '../method-extractors/objective-c.js';
+import { objectiveCFieldExtractor } from '../field-extractors/objective-c.js';
 
 const objcClassConfig: ClassExtractionConfig = {
   language: SupportedLanguages.ObjectiveC,
@@ -126,6 +127,7 @@ export const objectiveCProvider = defineLanguage({
 
   classExtractor: createClassExtractor(objcClassConfig),
   methodExtractor: createObjectiveCMethodExtractor(),
+  fieldExtractor: objectiveCFieldExtractor,
 
   definitionNameResolver: (
     nodeLabel: NodeLabel,
