@@ -61,6 +61,13 @@ export const TYPESCRIPT_QUERIES = `
       name: (identifier) @name
       value: (function_expression)))) @definition.function
 
+; Exported const definitions with call-expression initializers (e.g., export const X = factory(...))
+(export_statement
+  declaration: (lexical_declaration
+    (variable_declarator
+      name: (identifier) @name
+      value: (call_expression))) ) @definition.const
+
 (import_statement
   source: (string) @import.source) @import
 

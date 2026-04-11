@@ -50,6 +50,11 @@ describe('tree-sitter queries', () => {
       expect(TYPESCRIPT_QUERIES).toContain('@call');
     });
 
+    it('captures exported const definitions', () => {
+      expect(TYPESCRIPT_QUERIES).toContain('@definition.const');
+      expect(TYPESCRIPT_QUERIES).toContain('lexical_declaration');
+    });
+
     it('captures heritage (extends/implements)', () => {
       expect(TYPESCRIPT_QUERIES).toContain('@heritage.extends');
       expect(TYPESCRIPT_QUERIES).toContain('@heritage.implements');

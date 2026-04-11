@@ -24,6 +24,7 @@ import { cCppExportChecker } from '../export-detection.js';
 import { resolveObjectiveCImport } from '../import-resolvers/standard.js';
 import { OBJC_QUERIES } from '../tree-sitter-queries.js';
 import type { NodeLabel } from 'gitnexus-shared';
+import { createObjectiveCMethodExtractor } from '../method-extractors/objective-c.js';
 
 const objcClassConfig: ClassExtractionConfig = {
   language: SupportedLanguages.ObjectiveC,
@@ -124,6 +125,7 @@ export const objectiveCProvider = defineLanguage({
   importSemantics: 'wildcard',
 
   classExtractor: createClassExtractor(objcClassConfig),
+  methodExtractor: createObjectiveCMethodExtractor(),
 
   definitionNameResolver: (
     nodeLabel: NodeLabel,

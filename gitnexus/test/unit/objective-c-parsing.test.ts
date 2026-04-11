@@ -5,6 +5,7 @@ import type { SyntaxNode } from '../../src/core/ingestion/utils/ast-helpers.js';
 import { OBJC_QUERIES } from '../../src/core/ingestion/tree-sitter-queries.js';
 import { extractParsedCallSite } from '../../src/core/ingestion/call-sites/extract-language-call-site.js';
 import { SupportedLanguages } from '../../src/config/supported-languages.js';
+import { getProvider } from '../../src/core/ingestion/languages/index.js';
 
 type CallCapture = {
   callNode: SyntaxNode;
@@ -87,5 +88,28 @@ describe('Objective-C parsing', () => {
     `;
     const captures = extractHeritageCaptures(code);
     expect(captures).toEqual([{ child: 'Child', parent: 'Parent' }]);
+  });
+
+  it('extracts parameter counts for selector methods', () => {
+    const code = `
+      @interface Widget : NSObject
+      - (void)doThing:(int)a bar:(id)b;
+      @end
+      @implementation Widget
+      - (void)doThing:(int)a bar:(id)b {}
+      @end
+    `;
+    const parser = new Parser();
+    parser.setLanguage(ObjectiveC);
+    const tree = parser.parse(code);
+    const provider = getProvider(SupportedLanguages.ObjectiveC);
+    const classInterface = tree.rootNode.namedChildren.find((n) => n.type === 'class_interface');
+    expect(classInterface).toBeDefined();
+    const extracted = provider.methodExtractor?.extract(classInterface!, {
+      filePath: 'widget.m',
+      language: SupportedLanguages.ObjectiveC,
+    });
+    const method = extracted?.methods.find((m) => m.name === 'doThing:bar:');
+    expect(method?.parameters.length).toBe(2);
   });
 });
