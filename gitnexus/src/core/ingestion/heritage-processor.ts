@@ -19,7 +19,6 @@ import { ASTCache } from './ast-cache.js';
 import Parser from 'tree-sitter';
 import { isLanguageAvailable, loadParser, loadLanguage } from '../tree-sitter/parser-loader.js';
 import { generateId } from '../../lib/utils.js';
-import { getLanguageFromFilename } from 'gitnexus-shared';
 import { isVerboseIngestionEnabled } from './utils/verbose.js';
 import { yieldToEventLoop } from './utils/event-loop.js';
 import { SupportedLanguages } from 'gitnexus-shared';
@@ -28,6 +27,8 @@ import { getTreeSitterBufferSize } from './constants.js';
 import type { ExtractedHeritage } from './workers/parse-worker.js';
 import type { ResolutionContext } from './resolution-context.js';
 import { TIER_CONFIDENCE } from './resolution-context.js';
+import { resolveLanguageForFile } from './utils/language-hints.js';
+import { preprocessObjectiveCContent } from './utils/objective-c-preprocess.js';
 
 /**
  * Determine whether a heritage.extends capture is actually an IMPLEMENTS relationship.
@@ -113,7 +114,7 @@ export const processHeritage = async (
     if (i % 20 === 0) await yieldToEventLoop();
 
     // 1. Check language support
-    const language = getLanguageFromFilename(file.path);
+    const language = resolveLanguageForFile(file.path, file.content);
     if (!language) continue;
     if (!isLanguageAvailable(language)) {
       if (skippedByLang) {
@@ -134,8 +135,12 @@ export const processHeritage = async (
     if (!tree) {
       // Use larger bufferSize for files > 32KB
       try {
-        tree = parser.parse(file.content, undefined, {
-          bufferSize: getTreeSitterBufferSize(file.content.length),
+        const parseContent =
+          language === SupportedLanguages.ObjectiveC
+            ? preprocessObjectiveCContent(file.content)
+            : file.content;
+        tree = parser.parse(parseContent, undefined, {
+          bufferSize: getTreeSitterBufferSize(parseContent.length),
         });
       } catch (parseError) {
         // Skip files that can't be parsed
@@ -290,7 +295,7 @@ export const processHeritageFromExtracted = async (
     const h = extractedHeritage[i];
 
     if (h.kind === 'extends') {
-      const fileLanguage = getLanguageFromFilename(h.filePath);
+      const fileLanguage = resolveLanguageForFile(h.filePath, undefined);
       if (!fileLanguage) continue;
       const { type: relType, idPrefix } = resolveExtendsType(
         h.parentName,
@@ -383,7 +388,7 @@ export async function extractExtractedHeritageFromFiles(
   const out: ExtractedHeritage[] = [];
 
   for (const file of files) {
-    const language = getLanguageFromFilename(file.path);
+    const language = resolveLanguageForFile(file.path, file.content);
     if (!language || !isLanguageAvailable(language)) continue;
 
     const provider = getProvider(language);
@@ -395,8 +400,12 @@ export async function extractExtractedHeritageFromFiles(
     let tree = astCache.get(file.path);
     if (!tree) {
       try {
-        tree = parser.parse(file.content, undefined, {
-          bufferSize: getTreeSitterBufferSize(file.content.length),
+        const parseContent =
+          language === SupportedLanguages.ObjectiveC
+            ? preprocessObjectiveCContent(file.content)
+            : file.content;
+        tree = parser.parse(parseContent, undefined, {
+          bufferSize: getTreeSitterBufferSize(parseContent.length),
         });
       } catch {
         continue;

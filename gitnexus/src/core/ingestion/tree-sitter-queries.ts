@@ -445,6 +445,11 @@ ${C_QUERIES}
 (class_interface
   (identifier) @heritage.class
   superclass: (identifier) @heritage.extends) @heritage
+; @interface Child : Parent <Proto1, Proto2>
+(class_interface
+  (identifier) @heritage.class
+  (parameterized_arguments
+    (type_name (type_identifier) @heritage.implements))) @heritage.impl
 `;
 
 // Go queries - works with tree-sitter-go

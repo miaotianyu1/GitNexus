@@ -54,6 +54,7 @@ import {
   type SyntaxNode,
 } from '../utils/ast-helpers.js';
 import { resolveLanguageForFile } from '../utils/language-hints.js';
+import { preprocessObjectiveCContent } from '../utils/objective-c-preprocess.js';
 import {
   countCallArguments,
   inferCallForm,
@@ -1363,6 +1364,9 @@ const processFileGroup = (
       parseContent = extracted.scriptContent;
       lineOffset = extracted.lineOffset;
       isVueSetup = extracted.isSetup;
+    }
+    if (language === SupportedLanguages.ObjectiveC) {
+      parseContent = preprocessObjectiveCContent(parseContent);
     }
 
     clearCaches(); // Reset memoization before each new file

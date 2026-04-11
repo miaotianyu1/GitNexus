@@ -47,6 +47,7 @@ import type {
 } from './workers/parse-worker.js';
 import { getTreeSitterBufferSize, TREE_SITTER_MAX_BUFFER } from './constants.js';
 import { resolveLanguageForFile } from './utils/language-hints.js';
+import { preprocessObjectiveCContent } from './utils/objective-c-preprocess.js';
 
 export type FileProgressCallback = (current: number, total: number, filePath: string) => void;
 
@@ -324,6 +325,9 @@ const processParsingSequential = async (
       parseContent = extracted.scriptContent;
       lineOffset = extracted.lineOffset;
       isVueSetup = extracted.isSetup;
+    }
+    if (language === SupportedLanguages.ObjectiveC) {
+      parseContent = preprocessObjectiveCContent(parseContent);
     }
 
     try {

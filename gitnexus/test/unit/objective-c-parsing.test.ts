@@ -60,8 +60,13 @@ function extractHeritageCaptures(code: string): HeritageCapture[] {
     }
     const childNode = captureMap['heritage.class'];
     const parentNode = captureMap['heritage.extends'];
-    if (!childNode || !parentNode) continue;
-    results.push({ child: childNode.text, parent: parentNode.text });
+    if (childNode && parentNode) {
+      results.push({ child: childNode.text, parent: parentNode.text });
+    }
+    const implementsNode = captureMap['heritage.implements'];
+    if (childNode && implementsNode) {
+      results.push({ child: childNode.text, parent: implementsNode.text });
+    }
   }
 
   return results;
@@ -122,6 +127,22 @@ describe('Objective-C parsing', () => {
     `;
     const captures = extractHeritageCaptures(code);
     expect(captures).toEqual([{ child: 'Child', parent: 'Parent' }]);
+  });
+
+  it('captures protocol implementations on class interfaces', () => {
+    const code = `
+      @interface Foo : NSObject <MOSubScrollViewProtocol, UIScrollViewDelegate>
+      @end
+    `;
+    const captures = extractHeritageCaptures(code);
+    expect(captures).toContainEqual({
+      child: 'Foo',
+      parent: 'MOSubScrollViewProtocol',
+    });
+    expect(captures).toContainEqual({
+      child: 'Foo',
+      parent: 'UIScrollViewDelegate',
+    });
   });
 
   it('captures protocol declarations as Interface definitions', () => {
