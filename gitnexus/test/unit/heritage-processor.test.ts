@@ -55,6 +55,9 @@ describe('processHeritageFromExtracted', () => {
       expect(rels).toHaveLength(1);
       expect(rels[0].sourceId).toContain('AdminUser');
       expect(rels[0].targetId).toContain('BaseUser');
+      const externalNode = graph.getNode(rels[0].targetId);
+      expect(externalNode?.properties?.isExternal).toBe(true);
+      expect(externalNode?.properties?.source).toBe('inferred');
     });
 
     it('skips self-inheritance', async () => {

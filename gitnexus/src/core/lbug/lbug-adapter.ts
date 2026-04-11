@@ -429,13 +429,7 @@ const fallbackRelationshipInserts = async (
 };
 
 /** Tables with isExported column (TypeScript/JS-native types) */
-const TABLES_WITH_EXPORTED = new Set<string>([
-  'Function',
-  'Class',
-  'Interface',
-  'Method',
-  'CodeElement',
-]);
+const TABLES_WITH_EXPORTED = new Set<string>(['Function', 'Method', 'CodeElement']);
 
 const getCopyQuery = (table: NodeTableName, filePath: string): string => {
   const t = escapeTableName(table);
@@ -463,12 +457,15 @@ const getCopyQuery = (table: NodeTableName, filePath: string): string => {
   if (table === 'Method') {
     return `COPY ${t}(id, name, filePath, startLine, endLine, isExported, content, description, parameterCount, returnType) FROM "${filePath}" ${COPY_CSV_OPTS}`;
   }
+  if (table === 'Class' || table === 'Interface') {
+    return `COPY ${t}(id, name, filePath, startLine, endLine, isExported, isExternal, source, content, description) FROM "${filePath}" ${COPY_CSV_OPTS}`;
+  }
   // TypeScript/JS code element tables have isExported; multi-language tables do not
   if (TABLES_WITH_EXPORTED.has(table)) {
     return `COPY ${t}(id, name, filePath, startLine, endLine, isExported, content, description) FROM "${filePath}" ${COPY_CSV_OPTS}`;
   }
   // Multi-language tables (Struct, Impl, Trait, Macro, etc.)
-  return `COPY ${t}(id, name, filePath, startLine, endLine, content, description) FROM "${filePath}" ${COPY_CSV_OPTS}`;
+  return `COPY ${t}(id, name, filePath, startLine, endLine, isExternal, source, content, description) FROM "${filePath}" ${COPY_CSV_OPTS}`;
 };
 
 /**
@@ -509,6 +506,13 @@ export const insertNodeToLbug = async (
         ? `, description: ${escapeValue(properties.description)}`
         : '';
       query = `CREATE (n:Section {id: ${escapeValue(properties.id)}, name: ${escapeValue(properties.name)}, filePath: ${escapeValue(properties.filePath)}, startLine: ${properties.startLine || 0}, endLine: ${properties.endLine || 0}, level: ${properties.level || 1}, content: ${escapeValue(properties.content || '')}${descPart}})`;
+    } else if (label === 'Class' || label === 'Interface') {
+      const descPart = properties.description
+        ? `, description: ${escapeValue(properties.description)}`
+        : '';
+      const sourcePart =
+        typeof properties.source === 'string' ? `, source: ${escapeValue(properties.source)}` : '';
+      query = `CREATE (n:${t} {id: ${escapeValue(properties.id)}, name: ${escapeValue(properties.name)}, filePath: ${escapeValue(properties.filePath)}, startLine: ${properties.startLine || 0}, endLine: ${properties.endLine || 0}, isExported: ${!!properties.isExported}, isExternal: ${!!properties.isExternal}${sourcePart}, content: ${escapeValue(properties.content || '')}${descPart}})`;
     } else if (TABLES_WITH_EXPORTED.has(label)) {
       const descPart = properties.description
         ? `, description: ${escapeValue(properties.description)}`
@@ -519,7 +523,9 @@ export const insertNodeToLbug = async (
       const descPart = properties.description
         ? `, description: ${escapeValue(properties.description)}`
         : '';
-      query = `CREATE (n:${t} {id: ${escapeValue(properties.id)}, name: ${escapeValue(properties.name)}, filePath: ${escapeValue(properties.filePath)}, startLine: ${properties.startLine || 0}, endLine: ${properties.endLine || 0}, content: ${escapeValue(properties.content || '')}${descPart}})`;
+      const sourcePart =
+        typeof properties.source === 'string' ? `, source: ${escapeValue(properties.source)}` : '';
+      query = `CREATE (n:${t} {id: ${escapeValue(properties.id)}, name: ${escapeValue(properties.name)}, filePath: ${escapeValue(properties.filePath)}, startLine: ${properties.startLine || 0}, endLine: ${properties.endLine || 0}, isExternal: ${!!properties.isExternal}${sourcePart}, content: ${escapeValue(properties.content || '')}${descPart}})`;
     }
 
     // Use per-query connection if dbPath provided (avoids lock conflicts)

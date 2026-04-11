@@ -44,7 +44,7 @@ export const resolveExtendsType = (
   currentFilePath: string,
   ctx: ResolutionContext,
   language: SupportedLanguages,
-): { type: 'EXTENDS' | 'IMPLEMENTS'; idPrefix: string } => {
+): { type: 'EXTENDS' | 'IMPLEMENTS'; idPrefix: import('gitnexus-shared').NodeLabel } => {
   const resolved = ctx.resolve(parentName, currentFilePath);
   if (resolved && resolved.candidates.length > 0) {
     const isInterface = resolved.candidates[0].type === 'Interface';
@@ -72,29 +72,54 @@ interface ResolvedHeritage {
   readonly confidence: number;
 }
 
+const ensureExternalNode = (
+  graph: KnowledgeGraph,
+  nodeId: string,
+  label: import('gitnexus-shared').NodeLabel,
+  name: string,
+): void => {
+  if (graph.getNode(nodeId)) return;
+  graph.addNode({
+    id: nodeId,
+    label,
+    properties: {
+      name,
+      filePath: '<external>',
+      startLine: 0,
+      endLine: 0,
+      isExternal: true,
+      source: 'inferred',
+    },
+  });
+};
+
 const resolveHeritageId = (
+  graph: KnowledgeGraph | null,
   name: string,
   filePath: string,
   ctx: ResolutionContext,
-  fallbackLabel: string,
+  fallbackLabel: import('gitnexus-shared').NodeLabel,
   fallbackKey?: string,
+  allowExternal = false,
 ): ResolvedHeritage => {
   const resolved = ctx.resolve(name, filePath);
   if (resolved && resolved.candidates.length > 0) {
     // For global with multiple candidates, refuse (a wrong edge is worse than no edge)
     if (resolved.tier === 'global' && resolved.candidates.length > 1) {
-      return {
-        id: generateId(fallbackLabel, fallbackKey ?? name),
-        confidence: TIER_CONFIDENCE['global'],
-      };
+      const id = generateId(fallbackLabel, fallbackKey ?? name);
+      if (allowExternal && graph) {
+        ensureExternalNode(graph, id, fallbackLabel, name);
+      }
+      return { id, confidence: TIER_CONFIDENCE['global'] };
     }
     return { id: resolved.candidates[0].nodeId, confidence: TIER_CONFIDENCE[resolved.tier] };
   }
   // Unresolved: use global-tier confidence as fallback
-  return {
-    id: generateId(fallbackLabel, fallbackKey ?? name),
-    confidence: TIER_CONFIDENCE['global'],
-  };
+  const id = generateId(fallbackLabel, fallbackKey ?? name);
+  if (allowExternal && graph) {
+    ensureExternalNode(graph, id, fallbackLabel, name);
+  }
+  return { id, confidence: TIER_CONFIDENCE['global'] };
 };
 
 export const processHeritage = async (
@@ -189,13 +214,23 @@ export const processHeritage = async (
         );
 
         const child = resolveHeritageId(
+          graph,
           className,
           file.path,
           ctx,
           'Class',
           `${file.path}:${className}`,
+          false,
         );
-        const parent = resolveHeritageId(parentClassName, file.path, ctx, idPrefix);
+        const parent = resolveHeritageId(
+          graph,
+          parentClassName,
+          file.path,
+          ctx,
+          idPrefix,
+          undefined,
+          true,
+        );
 
         if (child.id && parent.id && child.id !== parent.id) {
           graph.addRelationship({
@@ -215,13 +250,23 @@ export const processHeritage = async (
         const interfaceName = captureMap['heritage.implements'].text;
 
         const cls = resolveHeritageId(
+          graph,
           className,
           file.path,
           ctx,
           'Class',
           `${file.path}:${className}`,
+          false,
         );
-        const iface = resolveHeritageId(interfaceName, file.path, ctx, 'Interface');
+        const iface = resolveHeritageId(
+          graph,
+          interfaceName,
+          file.path,
+          ctx,
+          'Interface',
+          undefined,
+          true,
+        );
 
         if (cls.id && iface.id) {
           graph.addRelationship({
@@ -241,13 +286,15 @@ export const processHeritage = async (
         const traitName = captureMap['heritage.trait'].text;
 
         const strct = resolveHeritageId(
+          graph,
           structName,
           file.path,
           ctx,
           'Struct',
           `${file.path}:${structName}`,
+          false,
         );
-        const trait = resolveHeritageId(traitName, file.path, ctx, 'Trait');
+        const trait = resolveHeritageId(graph, traitName, file.path, ctx, 'Trait', undefined, true);
 
         if (strct.id && trait.id) {
           graph.addRelationship({
@@ -305,13 +352,23 @@ export const processHeritageFromExtracted = async (
       );
 
       const child = resolveHeritageId(
+        graph,
         h.className,
         h.filePath,
         ctx,
         'Class',
         `${h.filePath}:${h.className}`,
+        false,
       );
-      const parent = resolveHeritageId(h.parentName, h.filePath, ctx, idPrefix);
+      const parent = resolveHeritageId(
+        graph,
+        h.parentName,
+        h.filePath,
+        ctx,
+        idPrefix,
+        undefined,
+        true,
+      );
 
       if (child.id && parent.id && child.id !== parent.id) {
         graph.addRelationship({
@@ -325,13 +382,23 @@ export const processHeritageFromExtracted = async (
       }
     } else if (h.kind === 'implements') {
       const cls = resolveHeritageId(
+        graph,
         h.className,
         h.filePath,
         ctx,
         'Class',
         `${h.filePath}:${h.className}`,
+        false,
       );
-      const iface = resolveHeritageId(h.parentName, h.filePath, ctx, 'Interface');
+      const iface = resolveHeritageId(
+        graph,
+        h.parentName,
+        h.filePath,
+        ctx,
+        'Interface',
+        undefined,
+        true,
+      );
 
       if (cls.id && iface.id) {
         graph.addRelationship({
@@ -350,13 +417,23 @@ export const processHeritageFromExtracted = async (
       h.kind === 'prepend'
     ) {
       const strct = resolveHeritageId(
+        graph,
         h.className,
         h.filePath,
         ctx,
         'Struct',
         `${h.filePath}:${h.className}`,
+        false,
       );
-      const trait = resolveHeritageId(h.parentName, h.filePath, ctx, 'Trait');
+      const trait = resolveHeritageId(
+        graph,
+        h.parentName,
+        h.filePath,
+        ctx,
+        'Trait',
+        undefined,
+        true,
+      );
 
       if (strct.id && trait.id) {
         graph.addRelationship({

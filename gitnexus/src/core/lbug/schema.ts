@@ -57,6 +57,8 @@ CREATE NODE TABLE Class (
   startLine INT64,
   endLine INT64,
   isExported BOOLEAN,
+  isExternal BOOLEAN,
+  source STRING,
   content STRING,
   description STRING,
   PRIMARY KEY (id)
@@ -70,6 +72,8 @@ CREATE NODE TABLE Interface (
   startLine INT64,
   endLine INT64,
   isExported BOOLEAN,
+  isExternal BOOLEAN,
+  source STRING,
   content STRING,
   description STRING,
   PRIMARY KEY (id)
@@ -150,6 +154,8 @@ CREATE NODE TABLE \`${name}\` (
   filePath STRING,
   startLine INT64,
   endLine INT64,
+  isExternal BOOLEAN,
+  source STRING,
   content STRING,
   description STRING,
   PRIMARY KEY (id)
