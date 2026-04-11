@@ -431,6 +431,10 @@ ${C_QUERIES}
 ; Method name is the first identifier after method_type.
 (method_definition (method_type) (identifier) @name) @definition.method
 (method_declaration (method_type) (identifier) @name) @definition.method
+; Properties: @property (...) Type name;
+(property_declaration
+  (struct_declaration
+    (struct_declarator (identifier) @name))) @definition.property
 
 ; ── Calls ──────────────────────────────────────────────────────────────────
 ; Objective-C message send: [receiver selector:arg]

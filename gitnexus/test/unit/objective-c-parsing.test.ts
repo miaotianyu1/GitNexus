@@ -88,6 +88,9 @@ function extractDefinitionCaptures(code: string): DefinitionCapture[] {
     if (captureMap['definition.typedef']) {
       results.push({ label: 'Typedef', name: nameNode.text });
     }
+    if (captureMap['definition.property']) {
+      results.push({ label: 'Property', name: nameNode.text });
+    }
   }
 
   return results;
@@ -141,6 +144,19 @@ describe('Objective-C parsing', () => {
     expect(captures).toContainEqual({
       label: 'Typedef',
       name: 'MOSubScrollWillBeginDragging',
+    });
+  });
+
+  it('captures Objective-C property declarations', () => {
+    const code = `
+      @protocol MOSubScrollViewProtocol <NSObject>
+      @property (nonatomic, copy, nullable) MOSubScrollWillBeginDragging willBeginDragging;
+      @end
+    `;
+    const captures = extractDefinitionCaptures(code);
+    expect(captures).toContainEqual({
+      label: 'Property',
+      name: 'willBeginDragging',
     });
   });
 
