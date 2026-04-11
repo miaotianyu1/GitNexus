@@ -53,6 +53,7 @@ import {
   CLASS_CONTAINER_TYPES,
   type SyntaxNode,
 } from '../utils/ast-helpers.js';
+import { resolveLanguageForFile } from '../utils/language-hints.js';
 import {
   countCallArguments,
   inferCallForm,
@@ -720,7 +721,7 @@ const processBatch = (
   // Group by language to minimize setLanguage calls
   const byLanguage = new Map<SupportedLanguages, ParseWorkerInput[]>();
   for (const file of files) {
-    const lang = getLanguageFromFilename(file.path);
+    const lang = resolveLanguageForFile(file.path, file.content);
     if (!lang) continue;
     let list = byLanguage.get(lang);
     if (!list) {

@@ -6,7 +6,7 @@ import { getProvider } from './languages/index.js';
 import { generateId } from '../../lib/utils.js';
 import type { SymbolTable } from './symbol-table.js';
 import { ASTCache } from './ast-cache.js';
-import { getLanguageFromFilename, SupportedLanguages } from 'gitnexus-shared';
+import { SupportedLanguages } from 'gitnexus-shared';
 import { extractVueScript, isVueSetupTopLevel } from './vue-sfc-extractor.js';
 import { yieldToEventLoop } from './utils/event-loop.js';
 import {
@@ -46,6 +46,7 @@ import type {
   ExtractedORMQuery,
 } from './workers/parse-worker.js';
 import { getTreeSitterBufferSize, TREE_SITTER_MAX_BUFFER } from './constants.js';
+import { resolveLanguageForFile } from './utils/language-hints.js';
 
 export type FileProgressCallback = (current: number, total: number, filePath: string) => void;
 
@@ -78,7 +79,7 @@ const processParsingWithWorkers = async (
   // Filter to parseable files only
   const parseableFiles: ParseWorkerInput[] = [];
   for (const file of files) {
-    const lang = getLanguageFromFilename(file.path);
+    const lang = resolveLanguageForFile(file.path, file.content);
     if (lang) parseableFiles.push({ path: file.path, content: file.content });
   }
 
@@ -300,7 +301,7 @@ const processParsingSequential = async (
 
     if (i % 20 === 0) await yieldToEventLoop();
 
-    const language = getLanguageFromFilename(file.path);
+    const language = resolveLanguageForFile(file.path, file.content);
 
     if (!language) continue;
 

@@ -395,6 +395,11 @@ export const C_QUERIES = `
 (union_specifier name: (type_identifier) @name) @definition.union
 (enum_specifier name: (type_identifier) @name) @definition.enum
 (type_definition declarator: (type_identifier) @name) @definition.typedef
+; Block typedefs: typedef void(^MyBlock)(int);
+(type_definition
+  declarator: (function_declarator
+    declarator: (parenthesized_declarator
+      (block_pointer_declarator declarator: (type_identifier) @name)))) @definition.typedef
 
 ; Macros
 (preproc_function_def name: (identifier) @name) @definition.macro

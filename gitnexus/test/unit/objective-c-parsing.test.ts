@@ -18,6 +18,11 @@ type HeritageCapture = {
   parent: string;
 };
 
+type DefinitionCapture = {
+  label: string;
+  name: string;
+};
+
 function extractCallCaptures(code: string): CallCapture[] {
   const parser = new Parser();
   parser.setLanguage(ObjectiveC);
@@ -62,6 +67,32 @@ function extractHeritageCaptures(code: string): HeritageCapture[] {
   return results;
 }
 
+function extractDefinitionCaptures(code: string): DefinitionCapture[] {
+  const parser = new Parser();
+  parser.setLanguage(ObjectiveC);
+  const tree = parser.parse(code);
+  const query = new Parser.Query(ObjectiveC, OBJC_QUERIES);
+  const matches = query.matches(tree.rootNode);
+
+  const results: DefinitionCapture[] = [];
+  for (const match of matches) {
+    const captureMap: Record<string, SyntaxNode> = {};
+    for (const capture of match.captures) {
+      captureMap[capture.name] = capture.node;
+    }
+    const nameNode = captureMap['name'];
+    if (!nameNode) continue;
+    if (captureMap['definition.interface']) {
+      results.push({ label: 'Interface', name: nameNode.text });
+    }
+    if (captureMap['definition.typedef']) {
+      results.push({ label: 'Typedef', name: nameNode.text });
+    }
+  }
+
+  return results;
+}
+
 describe('Objective-C parsing', () => {
   it('resolves nested receiver for alloc/init', () => {
     const code = `
@@ -88,6 +119,29 @@ describe('Objective-C parsing', () => {
     `;
     const captures = extractHeritageCaptures(code);
     expect(captures).toEqual([{ child: 'Child', parent: 'Parent' }]);
+  });
+
+  it('captures protocol declarations as Interface definitions', () => {
+    const code = `
+      @protocol MOSubScrollViewProtocol <NSObject>
+      @end
+    `;
+    const captures = extractDefinitionCaptures(code);
+    expect(captures).toContainEqual({
+      label: 'Interface',
+      name: 'MOSubScrollViewProtocol',
+    });
+  });
+
+  it('captures block typedef names', () => {
+    const code = `
+      typedef void(^MOSubScrollWillBeginDragging)(int value);
+    `;
+    const captures = extractDefinitionCaptures(code);
+    expect(captures).toContainEqual({
+      label: 'Typedef',
+      name: 'MOSubScrollWillBeginDragging',
+    });
   });
 
   it('extracts parameter counts for selector methods', () => {
