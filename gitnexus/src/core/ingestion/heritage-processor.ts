@@ -2,8 +2,8 @@
  * Heritage Processor
  *
  * Extracts class inheritance relationships:
- * - EXTENDS: Class extends another Class (TS, JS, Python, C#, C++)
- * - IMPLEMENTS: Class implements an Interface (TS, C#, Java, Kotlin, PHP)
+ * - EXTENDS: Class extends another Class (TS, JS, Python, C#, C++, Objective-C)
+ * - IMPLEMENTS: Class implements an Interface (TS, C#, Java, Kotlin, PHP, Objective-C)
  *
  * Languages like C# use a single `base_list` for both class and interface parents.
  * We resolve the correct edge type by checking the symbol table: if the parent is
@@ -19,48 +19,36 @@ import { ASTCache } from './ast-cache.js';
 import Parser from 'tree-sitter';
 import { isLanguageAvailable, loadParser, loadLanguage } from '../tree-sitter/parser-loader.js';
 import { generateId } from '../../lib/utils.js';
+import { SupportedLanguages } from 'gitnexus-shared';
 import { isVerboseIngestionEnabled } from './utils/verbose.js';
 import { yieldToEventLoop } from './utils/event-loop.js';
-import { SupportedLanguages } from 'gitnexus-shared';
 import { getProvider } from './languages/index.js';
 import { getTreeSitterBufferSize } from './constants.js';
-import type { ExtractedHeritage } from './workers/parse-worker.js';
-import type { ResolutionContext } from './resolution-context.js';
-import { TIER_CONFIDENCE } from './resolution-context.js';
+import type {
+  ExtractedHeritage,
+  HeritageResolutionStrategy,
+  HeritageStrategyLookup,
+} from './model/heritage-map.js';
+import { resolveExtendsType } from './model/heritage-map.js';
+import type { ResolutionContext } from './model/resolution-context.js';
+import { TIER_CONFIDENCE } from './model/resolution-context.js';
 import { resolveLanguageForFile } from './utils/language-hints.js';
 import { preprocessObjectiveCContent } from './utils/objective-c-preprocess.js';
 
 /**
- * Determine whether a heritage.extends capture is actually an IMPLEMENTS relationship.
- * Uses the symbol table first (authoritative — Tier 1); falls back to provider-defined
- * heuristics for external symbols not present in the graph:
- *   - interfaceNamePattern: matched against parent name (e.g., /^I[A-Z]/ for C#/Java)
- *   - heritageDefaultEdge: 'IMPLEMENTS' causes all unresolved parents to map to IMPLEMENTS
- *   - All others: default EXTENDS
+ * Derive the heritage-resolution strategy for a language from its
+ * `LanguageProvider`. This is the production wiring that `buildHeritageMap`
+ * and the standalone `resolveExtendsType` call site use — the model layer
+ * itself stays unaware of the provider registry.
  */
-/** Exported for implementor-map construction (C#/Java: `extends` rows in base_list may be interfaces). */
-export const resolveExtendsType = (
-  parentName: string,
-  currentFilePath: string,
-  ctx: ResolutionContext,
-  language: SupportedLanguages,
-): { type: 'EXTENDS' | 'IMPLEMENTS'; idPrefix: import('gitnexus-shared').NodeLabel } => {
-  const resolved = ctx.resolve(parentName, currentFilePath);
-  if (resolved && resolved.candidates.length > 0) {
-    const isInterface = resolved.candidates[0].type === 'Interface';
-    return isInterface
-      ? { type: 'IMPLEMENTS', idPrefix: 'Interface' }
-      : { type: 'EXTENDS', idPrefix: 'Class' };
-  }
-  // Unresolved symbol — fall back to provider-defined heuristics
-  const provider = getProvider(language);
-  if (provider.interfaceNamePattern?.test(parentName)) {
-    return { type: 'IMPLEMENTS', idPrefix: 'Interface' };
-  }
-  if (provider.heritageDefaultEdge === 'IMPLEMENTS') {
-    return { type: 'IMPLEMENTS', idPrefix: 'Interface' };
-  }
-  return { type: 'EXTENDS', idPrefix: 'Class' };
+export const getHeritageStrategyForLanguage: HeritageStrategyLookup = (
+  lang: SupportedLanguages,
+): HeritageResolutionStrategy => {
+  const provider = getProvider(lang);
+  return {
+    interfaceNamePattern: provider.interfaceNamePattern,
+    defaultEdge: provider.heritageDefaultEdge ?? 'EXTENDS',
+  };
 };
 
 /**
@@ -72,6 +60,11 @@ interface ResolvedHeritage {
   readonly confidence: number;
 }
 
+/**
+ * Ensure an external placeholder node exists in the graph for unresolved parents.
+ * This allows EXTENDS/IMPLEMENTS edges to point to valid nodes even when the
+ * parent class/interface is in an external library not indexed by GitNexus.
+ */
 const ensureExternalNode = (
   graph: KnowledgeGraph,
   nodeId: string,
@@ -160,6 +153,7 @@ export const processHeritage = async (
     if (!tree) {
       // Use larger bufferSize for files > 32KB
       try {
+        // Preprocess Objective-C content to handle nullability macros
         const parseContent =
           language === SupportedLanguages.ObjectiveC
             ? preprocessObjectiveCContent(file.content)
@@ -178,8 +172,8 @@ export const processHeritage = async (
     let query;
     let matches;
     try {
-      const language = parser.getLanguage();
-      query = new Parser.Query(language, queryStr);
+      const lang = parser.getLanguage();
+      query = new Parser.Query(lang, queryStr);
       matches = query.matches(tree.rootNode);
     } catch (queryError) {
       console.warn(`Heritage query error for ${file.path}:`, queryError);
@@ -210,7 +204,7 @@ export const processHeritage = async (
           parentClassName,
           file.path,
           ctx,
-          language,
+          getHeritageStrategyForLanguage(language),
         );
 
         const child = resolveHeritageId(
@@ -348,7 +342,7 @@ export const processHeritageFromExtracted = async (
         h.parentName,
         h.filePath,
         ctx,
-        fileLanguage,
+        getHeritageStrategyForLanguage(fileLanguage),
       );
 
       const child = resolveHeritageId(
@@ -477,6 +471,7 @@ export async function extractExtractedHeritageFromFiles(
     let tree = astCache.get(file.path);
     if (!tree) {
       try {
+        // Preprocess Objective-C content to handle nullability macros
         const parseContent =
           language === SupportedLanguages.ObjectiveC
             ? preprocessObjectiveCContent(file.content)
