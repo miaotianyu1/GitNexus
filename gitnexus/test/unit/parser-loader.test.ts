@@ -73,6 +73,12 @@ describe('parser-loader', () => {
       await expect(loadLanguage(SupportedLanguages.Ruby)).resolves.not.toThrow();
     });
 
+    it('loads Objective-C language', async () => {
+      await expect(
+        loadLanguage(SupportedLanguages.ObjectiveC, 'ViewController.m'),
+      ).resolves.not.toThrow();
+    });
+
     it('throws for unsupported language', async () => {
       await expect(loadLanguage('erlang' as SupportedLanguages)).rejects.toThrow(
         'Unsupported language',

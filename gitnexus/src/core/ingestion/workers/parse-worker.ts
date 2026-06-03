@@ -34,6 +34,11 @@ try {
   Swift = _require('tree-sitter-swift');
 } catch {}
 
+let ObjectiveC: TreeSitterLanguage | null = null;
+try {
+  ObjectiveC = _require('tree-sitter-objc');
+} catch {}
+
 // tree-sitter-dart is an optionalDependency — may not be installed
 let Dart: TreeSitterLanguage | null = null;
 try {
@@ -45,7 +50,7 @@ let Kotlin: TreeSitterLanguage | null = null;
 try {
   Kotlin = _require('tree-sitter-kotlin');
 } catch {}
-import { getLanguageFromFilename } from 'gitnexus-shared';
+import { getLanguageFromFilename, getLanguageFromFilenameAndContent } from 'gitnexus-shared';
 import {
   FUNCTION_NODE_TYPES,
   getDefinitionNodeFromCaptures,
@@ -326,6 +331,7 @@ const languageMap: Record<string, TreeSitterLanguage> = {
   [SupportedLanguages.PHP]: PHP.php_only,
   [SupportedLanguages.Ruby]: Ruby,
   [SupportedLanguages.Vue]: TypeScript.typescript,
+  ...(ObjectiveC ? { [SupportedLanguages.ObjectiveC]: ObjectiveC } : {}),
   ...(Dart ? { [SupportedLanguages.Dart]: Dart } : {}),
   ...(Swift ? { [SupportedLanguages.Swift]: Swift } : {}),
 };
@@ -757,7 +763,7 @@ const processBatch = (
   // Group by language to minimize setLanguage calls
   const byLanguage = new Map<SupportedLanguages, ParseWorkerInput[]>();
   for (const file of files) {
-    const lang = getLanguageFromFilename(file.path);
+    const lang = getLanguageFromFilenameAndContent(file.path, file.content);
     if (!lang) continue;
     let list = byLanguage.get(lang);
     if (!list) {
@@ -2037,7 +2043,10 @@ const processFileGroup = (
 
       // Synthesize name for constructors without explicit @name capture (e.g. Swift init)
       if (!nameNode && nodeLabel !== 'Constructor' && !extractedClassSymbol) continue;
-      const nodeName = extractedClassSymbol?.name ?? (nameNode ? nameNode.text : 'init');
+      let nodeName = extractedClassSymbol?.name ?? (nameNode ? nameNode.text : 'init');
+      if (!extractedClassSymbol && definitionNode && provider.definitionNameResolver) {
+        nodeName = provider.definitionNameResolver(nodeLabel, nodeName, definitionNode) ?? nodeName;
+      }
       const startLine = definitionNode
         ? definitionNode.startPosition.row + lineOffset
         : nameNode

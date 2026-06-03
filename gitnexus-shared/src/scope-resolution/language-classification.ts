@@ -10,6 +10,7 @@
  *   - production: javascript, typescript, python, java, c, cpp, csharp, go,
  *                 ruby, rust, php, kotlin, swift, dart
  *   - experimental: vue (embedded-language / SFC complexity),
+ *                   objective-c (new tree-sitter provider rollout),
  *                   cobol (regex-provider path)
  *   - quarantined: (none)
  */
@@ -38,6 +39,7 @@ export const LanguageClassifications: Readonly<Record<SupportedLanguages, Langua
     [SupportedLanguages.PHP]: 'production',
     [SupportedLanguages.Kotlin]: 'production',
     [SupportedLanguages.Swift]: 'production',
+    [SupportedLanguages.ObjectiveC]: 'experimental',
     [SupportedLanguages.Dart]: 'production',
     [SupportedLanguages.Vue]: 'experimental',
     [SupportedLanguages.Cobol]: 'experimental',

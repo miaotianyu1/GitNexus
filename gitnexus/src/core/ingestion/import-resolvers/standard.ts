@@ -155,9 +155,13 @@ export const resolveImportPath = (
     return cache(null);
   }
 
-  // C/C++ includes use actual file paths (e.g. "animal.h") — don't convert dots to slashes
-  const isCpp = language === SupportedLanguages.C || language === SupportedLanguages.CPlusPlus;
-  const pathLike = importPath.includes('/') || isCpp ? importPath : importPath.replace(/\./g, '/');
+  // C/C++/Objective-C includes use actual file paths (e.g. "animal.h") — don't convert dots.
+  const isPathLikeLanguage =
+    language === SupportedLanguages.C ||
+    language === SupportedLanguages.CPlusPlus ||
+    language === SupportedLanguages.ObjectiveC;
+  const pathLike =
+    importPath.includes('/') || isPathLikeLanguage ? importPath : importPath.replace(/\./g, '/');
   const pathParts = pathLike.split('/').filter(Boolean);
 
   const resolved = suffixResolve(pathParts, normalizedFileList, allFileList, index);

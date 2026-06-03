@@ -22,6 +22,7 @@ import { cProvider, cppProvider } from './c-cpp.js';
 import { phpProvider } from './php.js';
 import { rubyProvider } from './ruby.js';
 import { swiftProvider } from './swift.js';
+import { objectiveCProvider } from './objective-c.js';
 import { dartProvider } from './dart.js';
 import { vueProvider } from './vue.js';
 import { cobolProvider } from './cobol.js';
@@ -40,6 +41,7 @@ export const providers = {
   [SupportedLanguages.PHP]: phpProvider,
   [SupportedLanguages.Ruby]: rubyProvider,
   [SupportedLanguages.Swift]: swiftProvider,
+  [SupportedLanguages.ObjectiveC]: objectiveCProvider,
   [SupportedLanguages.Dart]: dartProvider,
   [SupportedLanguages.Vue]: vueProvider,
   [SupportedLanguages.Cobol]: cobolProvider,

@@ -1293,6 +1293,79 @@ export const SWIFT_QUERIES = `
 
 `;
 
+export const OBJECTIVE_C_QUERIES = `
+${C_QUERIES}
+
+; Classes
+(class_interface
+  (identifier) @name) @definition.class
+
+(class_implementation
+  (identifier) @name) @definition.class
+
+; Protocols
+(protocol_declaration
+  (identifier) @name) @definition.interface
+
+; Methods
+(method_declaration
+  (method_type) .
+  (identifier) @name) @definition.method
+
+(method_definition
+  (method_type) .
+  (identifier) @name) @definition.method
+
+; Properties
+(property_declaration
+  (struct_declaration
+    (struct_declarator
+      (identifier) @name))) @definition.property
+
+(property_declaration
+  (struct_declaration
+    (struct_declarator
+      (pointer_declarator
+        declarator: (identifier) @name)))) @definition.property
+
+; Block typedefs
+(type_definition
+  declarator: (function_declarator
+    declarator: (parenthesized_declarator
+      (block_pointer_declarator
+        declarator: (type_identifier) @name)))) @definition.typedef
+
+; Imports
+(preproc_include
+  path: (_) @import.source) @import
+
+(module_import
+  path: (identifier) @import.source) @import
+
+; Calls
+(message_expression
+  method: (identifier) @call.name) @call
+
+(call_expression
+  function: (identifier) @call.name) @call
+
+; Heritage
+(class_interface
+  (identifier) @heritage.class
+  superclass: (identifier) @heritage.extends) @heritage
+
+(class_interface
+  (identifier) @heritage.class
+  (parameterized_arguments
+    (type_name
+      (type_identifier) @heritage.implements))) @heritage.impl
+
+(protocol_declaration
+  (identifier) @heritage.class
+  (protocol_reference_list
+    (identifier) @heritage.extends)) @heritage
+`;
+
 // Dart queries - works with tree-sitter-dart (UserNobody14/tree-sitter-dart, ABI 14)
 // Note: Dart grammar has function_signature/method_signature as wrappers;
 // top-level functions are (program > function_signature),
@@ -1520,6 +1593,7 @@ export const LANGUAGE_QUERIES: Record<SupportedLanguages, string> = {
   [SupportedLanguages.Kotlin]: KOTLIN_QUERIES,
   [SupportedLanguages.Ruby]: RUBY_QUERIES,
   [SupportedLanguages.Swift]: SWIFT_QUERIES,
+  [SupportedLanguages.ObjectiveC]: OBJECTIVE_C_QUERIES,
   [SupportedLanguages.Dart]: DART_QUERIES,
   [SupportedLanguages.Vue]: TYPESCRIPT_QUERIES, // Vue <script> blocks are parsed as TypeScript
   [SupportedLanguages.Cobol]: '', // Standalone regex processor — no tree-sitter queries

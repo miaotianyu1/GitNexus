@@ -32,7 +32,11 @@ import { getPhaseOutput } from '../../pipeline-phases/types.js';
 import type { StructureOutput } from '../../pipeline-phases/structure.js';
 import type { ParseOutput } from '../../pipeline-phases/parse.js';
 import { isRegistryPrimary } from '../../registry-primary-flag.js';
-import { SupportedLanguages, getLanguageFromFilename } from 'gitnexus-shared';
+import {
+  SupportedLanguages,
+  getLanguageFromFilename,
+  getLanguageFromFilenameAndContent,
+} from 'gitnexus-shared';
 import { readFileContents } from '../../filesystem-walker.js';
 import { runScopeResolution } from './run.js';
 import { SCOPE_RESOLVERS } from './registry.js';
@@ -136,8 +140,11 @@ export const scopeResolutionPhase: PipelinePhase<ScopeResolutionOutput> = {
       const files: { path: string; content: string }[] = [];
       for (const fp of filePaths) {
         const content = contents.get(fp);
-        if (content !== undefined) files.push({ path: fp, content });
+        if (content !== undefined && getLanguageFromFilenameAndContent(fp, content) === lang) {
+          files.push({ path: fp, content });
+        }
       }
+      if (files.length === 0) continue;
 
       // Load per-language import-resolution config (tsconfig paths,
       // composer.json autoload, go.mod, ...). One I/O round trip per

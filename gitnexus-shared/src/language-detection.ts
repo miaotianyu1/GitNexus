@@ -40,6 +40,7 @@ const EXTENSION_MAP: Record<SupportedLanguages, readonly string[]> = {
   [SupportedLanguages.PHP]: ['.php', '.phtml', '.php3', '.php4', '.php5', '.php8'],
   [SupportedLanguages.Kotlin]: ['.kt', '.kts'],
   [SupportedLanguages.Swift]: ['.swift'],
+  [SupportedLanguages.ObjectiveC]: ['.m', '.mm'],
   [SupportedLanguages.Dart]: ['.dart'],
   [SupportedLanguages.Vue]: ['.vue'],
   [SupportedLanguages.Cobol]: ['.cbl', '.cob', '.cpy', '.cobol'],
@@ -78,6 +79,28 @@ export const getLanguageFromFilename = (filename: string): SupportedLanguages | 
   return null;
 };
 
+const OBJECTIVE_C_HEADER_PATTERNS = [
+  /@interface\b/,
+  /@implementation\b/,
+  /@protocol\b/,
+  /@property\b/,
+  /@class\b/,
+  /^\s*#\s*import\b/m,
+  /\bNS_ASSUME_NONNULL_(?:BEGIN|END)\b/,
+];
+
+export const getLanguageFromFilenameAndContent = (
+  filename: string,
+  content: string,
+): SupportedLanguages | null => {
+  const language = getLanguageFromFilename(filename);
+  if (!filename.toLowerCase().endsWith('.h')) return language;
+  if (OBJECTIVE_C_HEADER_PATTERNS.some((pattern) => pattern.test(content))) {
+    return SupportedLanguages.ObjectiveC;
+  }
+  return language;
+};
+
 /**
  * Exhaustive map: every SupportedLanguages member → Prism syntax identifier.
  *
@@ -98,6 +121,7 @@ const SYNTAX_MAP: Record<SupportedLanguages, string> = {
   [SupportedLanguages.PHP]: 'php',
   [SupportedLanguages.Kotlin]: 'kotlin',
   [SupportedLanguages.Swift]: 'swift',
+  [SupportedLanguages.ObjectiveC]: 'objectivec',
   [SupportedLanguages.Dart]: 'dart',
   [SupportedLanguages.Vue]: 'typescript',
   [SupportedLanguages.Cobol]: 'cobol',

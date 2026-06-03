@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { getLanguageFromFilename, SupportedLanguages } from 'gitnexus-shared';
+import {
+  getLanguageFromFilename,
+  getLanguageFromFilenameAndContent,
+  SupportedLanguages,
+} from 'gitnexus-shared';
 import { getProvider } from '../../src/core/ingestion/languages/index.js';
 import type { SyntaxNode } from '../../src/core/ingestion/utils/ast-helpers.js';
 import type { NodeLabel } from 'gitnexus-shared';
@@ -62,6 +66,18 @@ describe('getLanguageFromFilename', () => {
   describe('C++', () => {
     it.each(['.cpp', '.cc', '.cxx', '.h', '.hpp', '.hxx', '.hh'])('detects %s files', (ext) => {
       expect(getLanguageFromFilename(`file${ext}`)).toBe(SupportedLanguages.CPlusPlus);
+    });
+
+    it('classifies Objective-C headers by content without changing generic .h detection', () => {
+      expect(
+        getLanguageFromFilenameAndContent(
+          'Widget.h',
+          '@interface Widget : NSObject\n@property NSString *title;\n@end',
+        ),
+      ).toBe(SupportedLanguages.ObjectiveC);
+      expect(
+        getLanguageFromFilenameAndContent('Widget.h', 'class Widget { public: void run(); };'),
+      ).toBe(SupportedLanguages.CPlusPlus);
     });
   });
 

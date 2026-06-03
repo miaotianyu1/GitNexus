@@ -6,7 +6,7 @@ import { getProvider } from './languages/index.js';
 import { generateId } from '../../lib/utils.js';
 import type { SymbolTableReader, SymbolTableWriter, ExtractedHeritage } from './model/index.js';
 import { ASTCache } from './ast-cache.js';
-import { getLanguageFromFilename, SupportedLanguages } from 'gitnexus-shared';
+import { getLanguageFromFilenameAndContent, SupportedLanguages } from 'gitnexus-shared';
 import { extractVueScript, isVueSetupTopLevel } from './vue-sfc-extractor.js';
 import { yieldToEventLoop } from './utils/event-loop.js';
 import { parseSourceSafe } from '../tree-sitter/safe-parse.js';
@@ -185,7 +185,7 @@ const processParsingWithWorkers = async (
   // Filter to parseable files only
   const parseableFiles: ParseWorkerInput[] = [];
   for (const file of files) {
-    const lang = getLanguageFromFilename(file.path);
+    const lang = getLanguageFromFilenameAndContent(file.path, file.content);
     if (lang) parseableFiles.push({ path: file.path, content: file.content });
   }
 
@@ -377,7 +377,7 @@ const processParsingSequential = async (
 
     if (i % 20 === 0) await yieldToEventLoop();
 
-    const language = getLanguageFromFilename(file.path);
+    const language = getLanguageFromFilenameAndContent(file.path, file.content);
 
     if (!language) continue;
     if (!isLanguageAvailable(language)) {
@@ -504,7 +504,10 @@ const processParsingSequential = async (
       }
       // Synthesize name for constructors without explicit @name capture (e.g. Swift init)
       if (!nameNode && nodeLabel !== 'Constructor' && !extractedClassSymbol) return;
-      const nodeName = extractedClassSymbol?.name ?? (nameNode ? nameNode.text : 'init');
+      let nodeName = extractedClassSymbol?.name ?? (nameNode ? nameNode.text : 'init');
+      if (!extractedClassSymbol && definitionNode && provider.definitionNameResolver) {
+        nodeName = provider.definitionNameResolver(nodeLabel, nodeName, definitionNode) ?? nodeName;
+      }
 
       const startLine = definitionNodeForRange
         ? definitionNodeForRange.startPosition.row + lineOffset

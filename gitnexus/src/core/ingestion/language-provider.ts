@@ -216,6 +216,15 @@ interface LanguageProviderConfig {
    *  (e.g., 'Method' for Kotlin), or defaultLabel to keep as-is.
    *  Default: undefined (standard label assignment). */
   readonly labelOverride?: (functionNode: SyntaxNode, defaultLabel: NodeLabel) => NodeLabel | null;
+  /** Rewrite the graph symbol name for a definition after the query-captured
+   *  default name has been read. Used by languages where the semantic name spans
+   *  multiple AST nodes, such as Objective-C selectors.
+   *  Return null to keep the query-captured name. */
+  readonly definitionNameResolver?: (
+    nodeLabel: NodeLabel,
+    defaultName: string,
+    definitionNode: SyntaxNode,
+  ) => string | null;
 
   // ── Heritage & MRO ────────────────────────────────────────────────
   /** Default edge type when parent symbol is ambiguous (interface vs class).

@@ -145,6 +145,12 @@ const SOURCES: Record<string, GrammarSource> = {
       'Likely cause: no prebuilt `.node` for this platform/architecture. ' +
       `See ${ISSUES_URL}/1130.`,
   },
+  [SupportedLanguages.ObjectiveC]: {
+    load: () => _require('tree-sitter-objc'),
+    unavailableNote:
+      'Objective-C parsing requires `tree-sitter-objc`. ' +
+      'Install with `npm ci` or rebuild the native grammar binding.',
+  },
   [SupportedLanguages.Dart]: {
     load: () => _require('tree-sitter-dart'),
     optional: true,

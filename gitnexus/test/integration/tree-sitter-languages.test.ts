@@ -2,7 +2,11 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { loadParser, loadLanguage } from '../../src/core/tree-sitter/parser-loader.js';
-import { SupportedLanguages, getLanguageFromFilename } from 'gitnexus-shared';
+import {
+  SupportedLanguages,
+  getLanguageFromFilename,
+  getSyntaxLanguageFromFilename,
+} from 'gitnexus-shared';
 import { getProvider } from '../../src/core/ingestion/languages/index.js';
 import Parser from 'tree-sitter';
 
@@ -407,6 +411,12 @@ describe('Tree-sitter multi-language parsing', () => {
   });
 
   describe('unhappy path', () => {
+    it('detects Objective-C source extensions', () => {
+      expect(getLanguageFromFilename('ViewController.m')).toBe(SupportedLanguages.ObjectiveC);
+      expect(getLanguageFromFilename('Widget.mm')).toBe(SupportedLanguages.ObjectiveC);
+      expect(getSyntaxLanguageFromFilename('ViewController.m')).toBe('objectivec');
+    });
+
     it('returns null/undefined for unsupported file extensions', () => {
       expect(getLanguageFromFilename('archive.xyz')).toBeNull();
       expect(getLanguageFromFilename('data.unknown')).toBeNull();
