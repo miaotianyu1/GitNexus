@@ -278,6 +278,12 @@ export const streamAllCSVsToDisk = async (
     'id,name,filePath,description',
   );
 
+  // Closure nodes for Objective-C block literals
+  const closureWriter = new BufferedCSVWriter(
+    path.join(csvDir, 'closure.csv'),
+    'id,name,filePath,startLine,endLine,content,description,enclosingMethodId',
+  );
+
   // Multi-language node types share the same CSV shape (no isExported column)
   const multiLangHeader = 'id,name,filePath,startLine,endLine,content,description';
   const MULTI_LANG_TYPES = [
@@ -451,6 +457,22 @@ export const streamAllCSVsToDisk = async (
           ].join(','),
         );
         break;
+      case 'Closure': {
+        const content = await extractContent(node, contentCache);
+        await closureWriter.addRow(
+          [
+            escapeCSVField(node.id),
+            escapeCSVField(node.properties.name || ''),
+            escapeCSVField(node.properties.filePath || ''),
+            escapeCSVNumber(node.properties.startLine, -1),
+            escapeCSVNumber(node.properties.endLine, -1),
+            escapeCSVField(content),
+            escapeCSVField(node.properties.description || ''),
+            escapeCSVField(String(node.properties.enclosingMethodId || '')),
+          ].join(','),
+        );
+        break;
+      }
       default: {
         // Code element nodes (Function, Class, Interface, CodeElement)
         const writer = codeWriterMap[node.label];
@@ -508,6 +530,7 @@ export const streamAllCSVsToDisk = async (
     sectionWriter,
     routeWriter,
     toolWriter,
+    closureWriter,
     ...multiLangWriters.values(),
   ];
   await Promise.all(allWriters.map((w) => w.finish()));
@@ -544,6 +567,7 @@ export const streamAllCSVsToDisk = async (
     ['Section' as NodeTableName, sectionWriter],
     ['Route' as NodeTableName, routeWriter],
     ['Tool' as NodeTableName, toolWriter],
+    ['Closure' as NodeTableName, closureWriter],
     ...Array.from(multiLangWriters.entries()).map(
       ([name, w]) => [name as NodeTableName, w] as [NodeTableName, BufferedCSVWriter],
     ),

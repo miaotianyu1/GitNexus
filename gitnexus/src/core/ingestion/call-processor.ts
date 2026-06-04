@@ -78,6 +78,7 @@ import { extractReturnTypeName, stripNullable } from './type-extractors/shared.j
 import type { LiteralTypeInferrer } from './type-extractors/types.js';
 import type { SyntaxNode } from './utils/ast-helpers.js';
 
+import { extractBlockArguments } from './call-extractors/configs/objective-c.js';
 import { logger } from '../logger.js';
 
 // ── Property-prepass helpers (parity with parse-worker.ts) ──
@@ -1130,6 +1131,37 @@ export const processCalls = async (
         // Assignment-only capture (no @call sibling): skip the rest of this
         // forEach iteration — this acts as a `continue` in the match loop.
         if (!captureMap['call']) return;
+      }
+
+      // ── PASSES_CALLBACK: Objective-C message expressions passing block literals ──
+      if (captureMap['call.with_block'] && language === SupportedLanguages.ObjectiveC) {
+        const messageNode = captureMap['call.with_block'];
+        const blockArgs = extractBlockArguments(messageNode);
+        if (blockArgs.length > 0) {
+          const enclosingMethodId = findEnclosingFunction(messageNode, file.path, ctx, provider);
+          if (enclosingMethodId) {
+            for (const { blockNode, keyword } of blockArgs) {
+              const closureLine = blockNode.startPosition.row + 1;
+              const closureCol = blockNode.startPosition.column;
+              const closureName = `closure_${closureLine}_${closureCol}`;
+              const closureId = generateId('Closure', `${file.path}:${closureName}`);
+              if (graph.getNode(closureId)) {
+                graph.addRelationship({
+                  id: generateId(
+                    'PASSES_CALLBACK',
+                    `${enclosingMethodId}:${keyword}->${closureId}`,
+                  ),
+                  sourceId: enclosingMethodId,
+                  targetId: closureId,
+                  type: 'PASSES_CALLBACK',
+                  confidence: 0.9,
+                  reason: `Block literal passed as '${keyword}:' argument`,
+                });
+              }
+            }
+          }
+        }
+        // Still fall through — this match may also carry @call / @call.name captures.
       }
 
       if (!captureMap['call']) return;
@@ -3490,4 +3522,70 @@ export const extractFetchCallsFromFiles = async (
   }
 
   return result;
+};
+
+/**
+ * Post-processing: link Closure nodes to their enclosing Methods via PASSES_CALLBACK edges.
+ * Matches by file + line range -- a Closure at line N is enclosed by the Method whose
+ * startLine <= N <= endLine (innermost Method wins).
+ *
+ * Safe to call at any point after all parse+resolve phases are complete (the graph
+ * must contain both Closure and Method nodes with startLine/endLine populated).
+ */
+export const emitClosureCallbackEdges = (graph: KnowledgeGraph): number => {
+  // Collect all Methods indexed by filePath
+  const methodsByFile = new Map<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      startLine: number;
+      endLine: number;
+    }>
+  >();
+  for (const node of graph.iterNodes()) {
+    if (node.label === 'Method' && node.properties.startLine && node.properties.endLine) {
+      const fp = (node.properties.filePath as string) ?? '';
+      if (!methodsByFile.has(fp)) methodsByFile.set(fp, []);
+      methodsByFile.get(fp)!.push({
+        id: node.id,
+        name: (node.properties.name as string) ?? '',
+        startLine: node.properties.startLine as number,
+        endLine: node.properties.endLine as number,
+      });
+    }
+  }
+
+  let emitted = 0;
+  for (const closureNode of graph.iterNodes()) {
+    if (closureNode.label !== 'Closure') continue;
+    const fp = (closureNode.properties.filePath as string) ?? '';
+    const closureStart = closureNode.properties.startLine as number | undefined;
+    if (!closureStart) continue;
+
+    const methods = methodsByFile.get(fp);
+    if (!methods?.length) continue;
+
+    // Find innermost enclosing method
+    let best: (typeof methods)[0] | null = null;
+    for (const m of methods) {
+      if (closureStart >= m.startLine && closureStart <= m.endLine) {
+        if (!best || m.startLine > best.startLine) {
+          best = m;
+        }
+      }
+    }
+    if (best) {
+      graph.addRelationship({
+        id: `PASSES_CALLBACK:${best.id}:${closureNode.id}`,
+        sourceId: best.id,
+        targetId: closureNode.id,
+        type: 'PASSES_CALLBACK' as const,
+        confidence: 0.9,
+        reason: `Block literal inside method '${best.name}'`,
+      });
+      emitted++;
+    }
+  }
+  return emitted;
 };

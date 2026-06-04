@@ -227,11 +227,13 @@ type AdjacencyList = Map<string, string[]>;
  */
 const MIN_TRACE_CONFIDENCE = 0.5;
 
+/** Edge types that participate in execution-flow tracing. */
+const TRACE_EDGE_TYPES = new Set(['CALLS', 'PASSES_CALLBACK', 'INVOKES_CALLBACK']);
 const buildCallsGraph = (graph: KnowledgeGraph): AdjacencyList => {
   const adj = new Map<string, string[]>();
 
   for (const rel of graph.iterRelationships()) {
-    if (rel.type === 'CALLS' && rel.confidence >= MIN_TRACE_CONFIDENCE) {
+    if (TRACE_EDGE_TYPES.has(rel.type) && rel.confidence >= MIN_TRACE_CONFIDENCE) {
       if (!adj.has(rel.sourceId)) {
         adj.set(rel.sourceId, []);
       }
@@ -246,7 +248,7 @@ const buildReverseCallsGraph = (graph: KnowledgeGraph): AdjacencyList => {
   const adj = new Map<string, string[]>();
 
   for (const rel of graph.iterRelationships()) {
-    if (rel.type === 'CALLS' && rel.confidence >= MIN_TRACE_CONFIDENCE) {
+    if (TRACE_EDGE_TYPES.has(rel.type) && rel.confidence >= MIN_TRACE_CONFIDENCE) {
       if (!adj.has(rel.targetId)) {
         adj.set(rel.targetId, []);
       }

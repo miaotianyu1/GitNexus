@@ -68,6 +68,15 @@ const extractPropertyName = (node: SyntaxNode): string | undefined => {
   const structDeclarator =
     structDecl?.namedChildren?.find((child) => child.type === 'struct_declarator') ??
     structDecl?.descendantsOfType?.('struct_declarator')?.[0];
+
+  // For block properties, the name is the identifier inside block_pointer_declarator
+  const blockPointer = structDeclarator?.descendantsOfType?.('block_pointer_declarator')?.[0];
+  if (blockPointer) {
+    const blockName = blockPointer.namedChildren?.find((c) => c.type === 'identifier');
+    if (blockName) return blockName.text;
+  }
+
+  // Non-block: last identifier in the struct_declarator
   const identifiers = structDeclarator?.descendantsOfType?.('identifier') ?? [];
   return (
     identifiers.at(-1)?.text ??
@@ -81,6 +90,57 @@ const extractPropertyType = (node: SyntaxNode): string | undefined => {
     node.descendantsOfType?.('struct_declaration')?.[0];
   if (!structDecl) return undefined;
 
+  const structDeclarator =
+    structDecl.namedChildren?.find((child) => child.type === 'struct_declarator') ??
+    structDecl.descendantsOfType?.('struct_declarator')?.[0];
+
+  if (structDeclarator) {
+    // Detect block pointer declarator: void(^name)(params) or Type*(^name)(params)
+    const hasBlockPointer =
+      (structDeclarator.descendantsOfType?.('block_pointer_declarator')?.length ?? 0) > 0;
+
+    if (hasBlockPointer) {
+      // Build full block signature: returnType(^)(paramTypes)
+      const returnTypeParts: string[] = [];
+      for (const child of structDecl.namedChildren ?? []) {
+        if (child.type === 'struct_declarator') continue;
+        returnTypeParts.push(child.text);
+      }
+      let returnType = returnTypeParts.join(' ') || 'void';
+
+      // Handle pointer prefix: struct_declarator may wrap pointer_declarator -> function_declarator
+      // e.g., NSString *(^transform)(id) has * inside the struct_declarator
+      const firstChild = structDeclarator.namedChildren?.[0];
+      if (firstChild?.type === 'pointer_declarator') {
+        returnType += '*';
+      }
+
+      // Extract parameter types from function_declarator's parameter_list
+      const funcDecl = structDeclarator.descendantsOfType?.('function_declarator')?.[0];
+      const paramList = funcDecl?.namedChildren?.find((c) => c.type === 'parameter_list');
+      const paramTypes: string[] = [];
+      if (paramList) {
+        for (const param of paramList.namedChildren ?? []) {
+          if (param.type !== 'parameter_declaration') continue;
+          // Collect all non-identifier, non-pointer_declarator children as the type
+          const typeParts: string[] = [];
+          for (const pc of param.namedChildren ?? []) {
+            if (pc.type === 'identifier') continue;
+            if (pc.type === 'pointer_declarator') {
+              typeParts.push('*');
+              continue;
+            }
+            typeParts.push(pc.text);
+          }
+          paramTypes.push(typeParts.join(''));
+        }
+      }
+
+      return `${returnType}(^)(${paramTypes.join(', ')})`;
+    }
+  }
+
+  // Non-block: return the type as before
   const typeNode =
     structDecl.namedChildren?.find((child) => child.type !== 'struct_declarator') ??
     structDecl.namedChildren?.find((child) => child.type === 'type_identifier') ??

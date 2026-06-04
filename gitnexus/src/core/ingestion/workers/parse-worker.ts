@@ -2042,8 +2042,21 @@ const processFileGroup = (
       }
 
       // Synthesize name for constructors without explicit @name capture (e.g. Swift init)
-      if (!nameNode && nodeLabel !== 'Constructor' && !extractedClassSymbol) continue;
+      // Closures (block literals) also have no @name — they're anonymous by nature
+      if (
+        !nameNode &&
+        nodeLabel !== 'Constructor' &&
+        nodeLabel !== 'Closure' &&
+        !extractedClassSymbol
+      )
+        continue;
       let nodeName = extractedClassSymbol?.name ?? (nameNode ? nameNode.text : 'init');
+      // For anonymous Closures (block literals), synthesize a name from source position
+      if (!nameNode && nodeLabel === 'Closure' && definitionNode) {
+        const line = definitionNode.startPosition.row + 1;
+        const col = definitionNode.startPosition.column;
+        nodeName = `closure_${line}_${col}`;
+      }
       if (!extractedClassSymbol && definitionNode && provider.definitionNameResolver) {
         nodeName = provider.definitionNameResolver(nodeLabel, nodeName, definitionNode) ?? nodeName;
       }

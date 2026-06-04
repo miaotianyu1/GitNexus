@@ -63,7 +63,7 @@ import type {
 import type { ExtractedHeritage } from '../model/heritage-map.js';
 import type { KnowledgeGraph } from '../../graph/types.js';
 import type { PipelineOptions } from '../pipeline.js';
-import { extractFetchCallsFromFiles } from '../call-processor.js';
+import { extractFetchCallsFromFiles, emitClosureCallbackEdges } from '../call-processor.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -703,6 +703,14 @@ export async function runChunkedParseAndResolve(
   if (exportedTypeMap.size === 0 && graph.nodeCount > 0) {
     const graphExports = buildExportedTypeMapFromGraph(graph, ctx.model.symbols);
     for (const [fp, exports] of graphExports) exportedTypeMap.set(fp, exports);
+  }
+
+  // Emit PASSES_CALLBACK edges: Closure -> enclosing Method
+  {
+    const emitted = emitClosureCallbackEdges(graph);
+    if (emitted > 0) {
+      logger.info({ emitted }, 'PASSES_CALLBACK edges emitted');
+    }
   }
 
   allPathObjects.length = 0;

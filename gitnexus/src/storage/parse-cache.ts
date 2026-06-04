@@ -44,7 +44,7 @@ import type { ParseWorkerResult } from '../core/ingestion/workers/parse-worker.j
  * On version mismatch, `loadParseCache` returns an empty cache and the
  * next save overwrites the on-disk file with the new version baked in.
  */
-const SCHEMA_BUMP = 2;
+const SCHEMA_BUMP = 3; // Bump: added @call.with_block, @call.block_arg, @definition.closure, @typedef.block_return, @typedef.block_params captures
 const GITNEXUS_PKG_VERSION = (() => {
   try {
     // package.json sits at gitnexus/package.json — two levels up from

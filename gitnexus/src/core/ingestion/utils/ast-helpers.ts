@@ -39,6 +39,7 @@ export const DEFINITION_CAPTURE_KEYS = [
   'definition.annotation',
   'definition.constructor',
   'definition.template',
+  'definition.closure',
 ] as const;
 
 /** Extract the definition node from a tree-sitter query capture map. */
@@ -100,6 +101,8 @@ export const FUNCTION_NODE_TYPES = new Set([
   // Dart
   'function_signature',
   'method_signature',
+  // Objective-C
+  'block_literal',
 ]);
 
 /**
@@ -197,7 +200,12 @@ export function getLabelFromCaptures(
   provider: LanguageProvider,
 ): NodeLabel | null {
   if (captureMap['import'] || captureMap['call']) return null;
-  if (!captureMap['name'] && !captureMap['definition.constructor']) return null;
+  if (
+    !captureMap['name'] &&
+    !captureMap['definition.constructor'] &&
+    !captureMap['definition.closure']
+  )
+    return null;
 
   if (captureMap['definition.function']) {
     if (provider.labelOverride) {
@@ -238,6 +246,7 @@ export function getLabelFromCaptures(
   if (captureMap['definition.annotation']) return 'Annotation';
   if (captureMap['definition.constructor']) return 'Constructor';
   if (captureMap['definition.template']) return 'Template';
+  if (captureMap['definition.closure']) return 'Closure';
   return 'CodeElement';
 }
 

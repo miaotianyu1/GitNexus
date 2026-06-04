@@ -1328,12 +1328,14 @@ ${C_QUERIES}
       (pointer_declarator
         declarator: (identifier) @name)))) @definition.property
 
-; Block typedefs
+; Block typedefs — capture name, return type, and parameter types
 (type_definition
+  type: (_) @typedef.block_return
   declarator: (function_declarator
     declarator: (parenthesized_declarator
       (block_pointer_declarator
-        declarator: (type_identifier) @name)))) @definition.typedef
+        declarator: (type_identifier) @name))
+    parameters: (parameter_list) @typedef.block_params)) @definition.typedef
 
 ; Imports
 (preproc_include
@@ -1348,6 +1350,13 @@ ${C_QUERIES}
 
 (call_expression
   function: (identifier) @call.name) @call
+
+; Block literals passed as message expression arguments
+(message_expression
+  (block_literal) @call.block_arg) @call.with_block
+
+; Block literals — capture for Closure node extraction
+(block_literal) @definition.closure
 
 ; Heritage
 (class_interface

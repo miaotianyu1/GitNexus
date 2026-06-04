@@ -207,6 +207,20 @@ CREATE NODE TABLE Tool (
   PRIMARY KEY (id)
 )`;
 
+// Objective-C block literals (anonymous closures)
+export const CLOSURE_SCHEMA = `
+CREATE NODE TABLE \`Closure\` (
+  id STRING,
+  name STRING,
+  filePath STRING,
+  startLine INT64,
+  endLine INT64,
+  content STRING,
+  description STRING,
+  enclosingMethodId STRING,
+  PRIMARY KEY (id)
+)`;
+
 // Markdown heading sections
 export const SECTION_SCHEMA = `
 CREATE NODE TABLE Section (
@@ -431,6 +445,15 @@ CREATE REL TABLE ${REL_TABLE_NAME} (
   FROM CodeElement TO Process,
   FROM Route TO Process,
   FROM Tool TO Process,
+  FROM \`Closure\` TO Function,
+  FROM \`Closure\` TO Method,
+  FROM \`Closure\` TO \`Closure\`,
+  FROM \`Closure\` TO Community,
+  FROM \`Closure\` TO Process,
+  FROM Function TO \`Closure\`,
+  FROM Method TO \`Closure\`,
+  FROM Class TO \`Closure\`,
+  FROM File TO \`Closure\`,
   type STRING,
   confidence DOUBLE,
   reason STRING,
@@ -521,6 +544,8 @@ export const NODE_SCHEMA_QUERIES = [
   ROUTE_SCHEMA,
   // MCP tools
   TOOL_SCHEMA,
+  // Objective-C block literals
+  CLOSURE_SCHEMA,
 ];
 
 export const REL_SCHEMA_QUERIES = [RELATION_SCHEMA];
